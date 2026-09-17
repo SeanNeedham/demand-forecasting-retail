@@ -1,167 +1,162 @@
 # Retail Demand Forecasting
 
-[View the live Streamlit app](https://demand-forecasting-retail-kg5mko7xnqxbjmzgcffz5y.streamlit.app/)
+**Python | statsmodels | Streamlit | 1,067,371 raw transactions | 5 SKUs forecast weekly**
 
-Interactive dashboard for weekly demand trends, forecast performance and inventory-planning actions.
+A demand-planning workflow that runs from raw transaction data through to a live dashboard planners can actually use.
 
-## Project Overview
+**[→ Open the live Streamlit app](https://demand-forecasting-retail-kg5mko7xnqxbjmzgcffz5y.streamlit.app/)**
 
-This project analyses historical retail transaction data to understand product demand patterns and build weekly forecasts for selected products.
+---
 
-The aim was to create a practical demand-planning workflow that could help inventory and planning teams:
+## Executive Summary
 
-- understand demand trends and seasonality
-- identify products suitable for forecasting
-- compare different forecasting approaches
-- select the most accurate model for each product
-- highlight products with higher planning risk
-- turn forecast results into practical inventory recommendations
+### The Problem
 
-The project covers the full analytics workflow from raw-data investigation and cleaning through exploratory analysis, forecasting, business recommendations and an interactive Streamlit application.
+Inventory and planning teams needed weekly demand forecasts, but the source data was not fit to forecast on. The Online Retail II workbook held over a million rows containing cancellations, stock adjustments, postage and fee lines, zero-price records, duplicate rows and a duplicated December 2010 overlap between worksheets. Forecasting it unaltered would have modelled administrative noise as if it were demand.
 
-## Business Questions
+### The Solution
 
-The analysis was designed to answer:
+Clean to genuine merchandise demand, screen for forecastability, then test five methods per product.
 
-1. How does product demand change over time?
-2. Is weekly or daily demand more suitable for forecasting?
-3. Which products have sufficient history and regular demand to forecast reliably?
-4. Which forecasting method performs best for each selected product?
-5. Which products carry the greatest forecast and demand-volatility risk?
-6. What actions could demand and inventory planners take from the results?
+- Reversed sales were matched to their **same-day cancellations** and removed as pairs — netting quantities alone would have left the demand signal distorted.
+- Products were **screened before modelling** against history length, demand regularity and volatility, so effort went only where a forecast could be trusted.
+- Models were evaluated on a **12-week time-based hold-out**, not a random sample, because a random split leaks future information into training.
 
-## Dataset
+### The Impact
 
-The project uses the Online Retail II transaction dataset covering approximately two years of retail activity.
+- Produced a **per-product model recommendation** rather than one blanket method.
+- Quantified planning risk per SKU using a single comparable error metric.
+- Delivered the results as a **live Streamlit app** built around planning decisions, not model output.
 
-The raw workbook contained 1,004,262 transaction rows across two annual worksheets.
+---
 
-Key fields included:
+## Key Operational Insights
 
-- invoice number
-- product StockCode
-- product description
-- quantity
-- invoice date
-- unit price
-- customer ID
-- country
+### Weekly aggregation is the right grain; daily is not
+Daily demand was highly volatile. Weekly aggregation produced a clear enough signal to model. This decision came before any forecasting and shaped everything after it.
 
-The raw data required investigation before it could be used for demand forecasting because it included cancellations, stock adjustments, duplicate records, overlapping worksheets, zero-price transactions and other non-product activity.
+### No single method wins across the range
+The best model differed by product — a result that argues directly against standardising on one forecasting approach.
 
-## Data Preparation
-
-The cleaning process focused on creating a dataset representing positive merchandise-order demand.
-
-Key decisions included:
-
-- removed exact duplicate transaction rows
-- resolved the duplicated December 2010 overlap between worksheets
-- excluded negative quantities representing cancellations, returns and stock adjustments
-- excluded zero and negative prices
-- identified and removed positive sales that were fully reversed by matching same-day cancellations
-- excluded non-merchandise StockCodes such as postage, fees, discounts and manual adjustments
-- retained missing Customer IDs where valid product, quantity and date information remained
-- retained legitimate high-volume customer orders rather than removing statistical outliers automatically
-
-The final cleaned dataset contained approximately **1 million valid transaction rows**.
-
-## Exploratory Analysis
-
-The exploratory analysis focused on understanding demand behaviour before selecting forecasting methods.
-
-Key findings included:
-
-- daily demand was highly volatile, while weekly aggregation produced a clearer signal
-- demand showed recurring strength during the autumn and pre-Christmas period
-- some weeks around Christmas and New Year had reduced or zero trading activity
-- demand was spread across a broad product range rather than being dominated by only a few SKUs
-- products differed significantly in demand regularity and volatility
-- the United Kingdom accounted for the majority of total demand
-
-To keep the modelling stage focused, products were screened using:
-
-- at least 52 weeks of available history
-- demand in at least 70% of available weeks
-- moderate rather than extreme demand volatility
-
-Five high-volume products were selected for forecasting.
-
-## Forecasting Approach
-
-Five forecasting methods were tested for each selected product:
-
-1. Naive baseline
-2. Four-week moving average
-3. Seasonal naive
-4. Simple exponential smoothing
-5. Holt's trend method
-
-A 12-week time-based test period was used so the models were evaluated on future demand rather than a random sample.
-
-Model performance was assessed using:
-
-- MAE
-- RMSE
-- WMAPE
-
-WMAPE was used as the primary model-selection metric because it allows forecast error to be compared across products with different demand volumes.
-
-## Forecasting Results
-
-The best-performing model differed by product.
-
-| Stock Code | Best Model | WMAPE |
+| Stock Code | Best model | WMAPE |
 |---|---|---:|
-| 21212 | Holt trend | 41.55% |
+| 84879 | Exponential smoothing | **26.62%** |
 | 84077 | Exponential smoothing | 38.40% |
-| 84879 | Exponential smoothing | 26.62% |
+| 21212 | Holt trend | 41.55% |
 | 85099B | Holt trend | 41.75% |
-| 85123A | Naive baseline | 42.05% |
+| 85123A | Naive baseline | **42.05%** |
 
-The results showed that no single forecasting method performed best across every SKU.
+85123A is best served by the naive baseline. The more complex methods did not improve out-of-sample accuracy for this SKU, reinforcing the importance of benchmarking sophisticated models against simple alternatives.
 
-Products with more stable demand were generally easier to forecast, while products with larger short-term demand spikes produced higher forecast error.
+### Forecast accuracy and peak-demand risk are different
+Products with more stable demand were generally easier to forecast, but peak-demand risk did not always align with average forecast error. 84879 and 84077 had the highest peak-to-average demand ratios while also achieving the two lowest WMAPE values. Their normal demand levels were relatively forecastable, but occasional extreme weeks still created inventory risk that the point forecast could not fully capture.
 
-## Business Recommendations
+### WMAPE was chosen for a specific reason
+MAE and RMSE were both calculated, but WMAPE was used to select models because it is comparable **across products with different demand volumes**. MAE on a high-volume SKU cannot be read against MAE on a lower-volume one.
 
-### 1. Use forecast reliability to guide inventory decisions
-Products with higher forecast error should be reviewed more frequently and planned with greater caution to reduce the risk of stockouts or excess inventory.
+### Demand is seasonal and the calendar is not clean
+Demand strengthens through autumn and the pre-Christmas period. Some weeks around Christmas and New Year show reduced or zero trading — real gaps in the calendar rather than missing data, and they have to be treated as such.
 
-### 2. Protect high-volatility products
-Products with large demand surges, particularly 84879 and 84077, should receive additional stock protection rather than relying only on the average weekly forecast.
+### Demand is broad, not concentrated
+Activity spread across a wide product range rather than clustering in a few SKUs. The **United Kingdom** accounted for the majority of total demand.
 
-### 3. Prepare earlier for peak season
-Demand strengthens during the autumn and pre-Christmas period, so forecast reviews and inventory planning should increase ahead of September to November.
+---
 
-## Streamlit Application
+## Recommendations & Business Actions
 
-An interactive Streamlit application was built to make the forecasting results easier to use for non-technical stakeholders.
+**1. Set review frequency by forecast error, not by product value.**
+Higher-WMAPE products warrant more frequent review and more cautious planning to limit both stockout and excess-inventory risk.
 
-The app allows users to:
+**2. Add stock protection for spike-prone products, specifically 84879 and 84077.**
+The average weekly forecast will not absorb a surge on its own.
 
-- select one of the five forecasted products
-- view the recommended forecasting method
-- see forecast error and planning risk
-- review historical weekly demand
-- compare actual demand against the selected forecast
-- compare forecasting methods
-- view product-specific planning actions
+**3. Bring peak-season planning forward to before September.**
+Demand strengthens across September to November, so forecast reviews need to precede that window rather than respond to it.
 
-The interface is designed around business decisions rather than technical model output.
+**4. Keep model selection at product level.**
+The results show method performance varies by SKU. Re-run the comparison as new products enter scope rather than applying one default.
 
-## Tools Used
+### Next steps
+- Test additional forecasting methods.
+- Introduce external drivers — promotions, holidays, pricing.
+- Extend the approach across a larger product range.
+- Move to rolling model validation.
+- Automate forecast refreshes.
+- Track forecast bias and service-level outcomes over time.
 
-- Python
-- pandas
-- NumPy
-- Matplotlib
-- statsmodels
-- Streamlit
-- Jupyter Notebook
-- Git / GitHub
+### What this analysis cannot tell you
+- Forecasts rest on historical demand alone; promotions, price changes and holiday effects are not modelled as drivers.
+- Only five screened products were forecast, so the results do not generalise to the full catalogue.
+- The screen deliberately excluded sparse and highly volatile products — those remain unforecast, not proven unforecastable.
+- Records with missing Customer IDs were retained for demand purposes, so customer-level conclusions cannot be drawn from this dataset.
 
-## Project Structure
+---
+
+## The Dataset & Metrics
+
+**Source:** [UCI Machine Learning Repository — Online Retail II](https://archive.ics.uci.edu/dataset/502/online+retail+ii) — approximately two years of retail transactions across two annual worksheets. **1,067,371 raw rows.**
+
+**Fields used**
+
+- Invoice number
+- Product StockCode
+- Product description
+- Quantity
+- Invoice date
+- Unit price
+- Customer ID
+- Country
+
+**Metrics measured**
+
+- Weekly aggregated demand per product
+- **MAE** — mean absolute error
+- **RMSE** — root mean squared error
+- **WMAPE** — weighted mean absolute percentage error *(primary selection metric)*
+- Demand regularity: share of available weeks with demand
+- Demand volatility per product
+
+**Product screening criteria**
+
+| Criterion | Threshold |
+|---|---|
+| History available | ≥ 52 weeks |
+| Weeks with demand | ≥ 70% |
+| Volatility | Moderate — extremes excluded |
+
+Five high-volume products passed and were carried into modelling.
+
+---
+
+## Methodology & Technical Stack
+
+**Stack:** Python · pandas · NumPy · Matplotlib · statsmodels · Streamlit · Jupyter Notebook · Git / GitHub
+
+### 1. Data understanding and cleaning — `01_data_understanding_and_cleaning.ipynb`
+- Removed exact duplicate transaction rows.
+- Resolved the duplicated December 2010 overlap between worksheets.
+- Excluded negative quantities representing cancellations, returns and stock adjustments.
+- Excluded zero and negative prices.
+- Matched and removed positive sales fully reversed by same-day cancellations.
+- Excluded non-merchandise StockCodes — postage, fees, discounts, manual adjustments.
+- **Retained** missing Customer IDs where product, quantity and date remained valid.
+- **Retained** legitimate high-volume customer orders rather than stripping statistical outliers automatically.
+
+Result: 1,004,262 cleaned transaction rows representing positive merchandise-order demand.
+
+### 2. Exploratory analysis — `02_exploratory_analysis.ipynb`
+Compared daily against weekly aggregation, examined seasonality and trading gaps, assessed demand spread across the product range, and screened products for forecastability.
+
+### 3. Forecasting — `03_forecasting_models.ipynb`
+Five methods tested per product: naive baseline, four-week moving average, seasonal naive, simple exponential smoothing, Holt's trend method. Evaluated on a **12-week time-based test period**, scored on MAE, RMSE and WMAPE.
+
+### 4. Business insights — `04_business_insights_and_recommendations.ipynb`
+Converted model performance into planning risk ratings and inventory actions.
+
+### 5. Streamlit application — `streamlit_app/app.py`
+Built for non-technical stakeholders. Users can select any of the five forecast products, view the recommended method, see forecast error and planning risk, review historical weekly demand, compare actual against forecast, compare methods side by side, and read product-specific planning actions.
+
+### Repository structure
 
 ```text
 demand-forecasting-retail/
@@ -184,27 +179,3 @@ demand-forecasting-retail/
 ├── README.md
 └── .gitignore
 ```
-
-## Key Skills Demonstrated
-
-This project demonstrates:
-
-- data quality investigation and cleaning
-- time-series aggregation and exploratory analysis
-- demand segmentation and product selection
-- forecasting model comparison
-- MAE, RMSE and WMAPE evaluation
-- translating model results into inventory-planning actions
-- stakeholder-focused dashboard design
-- end-to-end project delivery from raw data to interactive application
-
-## Next Steps
-
-Possible future improvements include:
-
-- testing additional forecasting methods
-- adding external drivers such as promotions, holidays or pricing
-- extending the approach to a larger product range
-- introducing rolling model validation
-- adding automated forecast refreshes
-- tracking forecast bias and service-level outcomes over time
