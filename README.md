@@ -28,7 +28,9 @@ Clean to genuine merchandise demand, screen for forecastability, then test five 
 - Quantified planning risk per SKU using a single comparable error metric.
 - Delivered the results as a **live Streamlit app** built around planning decisions, not model output.
 
----
+## Dashboard Preview
+
+![Retail Demand Forecasting Streamlit Dashboard](images/streamlit_dashboard.png)
 
 ## Key Operational Insights
 
@@ -112,7 +114,7 @@ The results show method performance varies by SKU. Re-run the comparison as new 
 - Weekly aggregated demand per product
 - **MAE** — mean absolute error
 - **RMSE** — root mean squared error
-- **WMAPE** — weighted mean absolute percentage error *(primary selection metric)*
+- **WMAPE** — weighted mean absolute percentage error *(primary metric)*
 - Demand regularity: share of available weeks with demand
 - Demand volatility per product
 
